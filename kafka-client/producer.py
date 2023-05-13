@@ -7,6 +7,7 @@ from uuid import uuid4
 from gpiozero import CPUTemperature
 from confluent_kafka import Producer
 from confluent_kafka.serialization import StringSerializer, SerializationContext, MessageField
+from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.json_schema import JSONSerializer
 from time import sleep
 
