@@ -16,6 +16,8 @@ if __name__ == '__main__':
     config_parser.read_file(args.config_file)
     config = dict(config_parser['default'])
 
+    print("Going to connect to: " + config_parser['default']['bootstrap.servers'])
+
     # Create Producer instance
     producer = Producer(config)
 
