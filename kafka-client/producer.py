@@ -19,7 +19,10 @@ if __name__ == '__main__':
     print("Going to connect to: " + config_parser['default']['bootstrap.servers'])
 
     # Create Producer instance
-    producer = Producer(config)
+    #producer = Producer(config)
+    producer = Producer({
+        'bootstrap.servers': '192.168.178.100:9092'
+    })
 
     # Optional per-message delivery callback (triggered by poll() or flush())
     # when a message has been successfully delivered or permanently

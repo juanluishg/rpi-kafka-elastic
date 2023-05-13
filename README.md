@@ -24,11 +24,11 @@ On raspberry-pi:
 `cd kafka-client && source kafka/bin/activate`
 
 ## Reference:
-[https://developer.confluent.io/get-started/python](Python - Get Started)
+[Python - Get Started](https://developer.confluent.io/get-started/python)
 
-[https://github.com/confluentinc/librdkafka#build-from-source](librdkafka - Build From Source)
+[librdkafka - Build From Source](https://github.com/confluentinc/librdkafka#build-from-source)
 
 ## Issues:
-[https://github.com/confluentinc/confluent-kafka-python/issues/875](confluent-kafka-python requires librdkafka v1.4.0 or later.)
+[confluent-kafka-python requires librdkafka v1.4.0 or later.](https://github.com/confluentinc/confluent-kafka-python/issues/875)
 
-[https://github.com/confluentinc/confluent-kafka-python/issues/928](undefined symbol: rd_kafka_event_AlterConsumerGroupOffsets_result)
+[undefined symbol: rd_kafka_event_AlterConsumerGroupOffsets_result](https://github.com/confluentinc/confluent-kafka-python/issues/928)
