@@ -28,6 +28,8 @@ On raspberry-pi:
 
 [librdkafka - Build From Source](https://github.com/confluentinc/librdkafka#build-from-source)
 
+[How Kafka Networking works](https://www.confluent.io/blog/kafka-listeners-explained/)
+
 ## Issues:
 [confluent-kafka-python requires librdkafka v1.4.0 or later.](https://github.com/confluentinc/confluent-kafka-python/issues/875)
 
