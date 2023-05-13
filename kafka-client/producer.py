@@ -2,7 +2,10 @@ import sys
 from random import choice
 from argparse import ArgumentParser, FileType
 from configparser import ConfigParser
+import psutil
+from gpiozero import CPUTemperature
 from confluent_kafka import Producer
+from time import sleep
 
 if __name__ == '__main__':
     # Parse the command line.
@@ -32,18 +35,23 @@ if __name__ == '__main__':
                 topic=msg.topic(), key=msg.key().decode('utf-8'), value=msg.value().decode('utf-8')))
 
     # Produce data by selecting random values from these lists.
-    topic = "purchases"
-    user_ids = ['eabara', 'jsmith', 'sgarcia', 'jbernard', 'htanaka', 'awalther']
-    products = ['book', 'alarm clock', 't-shirts', 'gift card', 'batteries']
+    topic = "internal-monitoring"
 
-    count = 0
-    for _ in range(10):
+    while(True):
+        cpu = CPUTemperature()
+        message = {
+            "cpu_usage": psutil.cpu_percent(4),
+            "cpu_temperature": cpu.temperature,
+            "ram_usage": psutil.virtual_memory()[2],
+            "ram_usage_gb": psutil.virtual_memory()[3]/1000000000 
+        }
 
-        user_id = choice(user_ids)
-        product = choice(products)
-        producer.produce(topic, product, user_id, callback=delivery_callback)
-        count += 1
+        print("Publishing: " + str(message))
 
-    # Block until the messages are sent.
-    producer.poll(10000)
-    producer.flush()
+        producer.produce(topic, message, callback=delivery_callback)
+
+        # Block until the messages are sent.
+        producer.poll(10000)
+        producer.flush()
+
+        sleep(5)
