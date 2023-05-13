@@ -102,7 +102,7 @@ def main(args):
       "required": [ "cpu_usage", "cpu_temperature", "ram_usage", "ram_usage_gb" ]
     }
     """
-    schema_registry_conf = {'url': config_parser['default']['schema.servers']}
+    schema_registry_conf = {'url': args.schema_server}
     schema_registry_client = SchemaRegistryClient(schema_registry_conf)
 
     string_serializer = StringSerializer('utf_8')
@@ -129,6 +129,7 @@ def main(args):
 if __name__ == '__main__':
     # Parse the command line.
     parser = ArgumentParser()
-    parser.add_argument('config_file', type=FileType('r'))
+    parser.add_argument('-c', dest='config_file', type=FileType('r'))
+    parser.add_argument('-s', dest='schema_server', type=str)
     args = parser.parse_args()
     main(args)
