@@ -9,7 +9,8 @@ from confluent_kafka import Producer
 from confluent_kafka.serialization import StringSerializer, SerializationContext, MessageField
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.json_schema import JSONSerializer
-from time import sleep
+from time import sleep, time
+import json
 
 class Monitor(object):
     """
@@ -31,7 +32,7 @@ class Monitor(object):
         self.ram_usage = ram_usage
         self.ram_usage_gb = ram_usage_gb
 
-def monitor_to_dict(monitor, ctx):
+def monitor_to_dict(monitor):
     """
     Returns a dict representation of a monitor instance for serialization.
 
@@ -46,7 +47,8 @@ def monitor_to_dict(monitor, ctx):
     """
 
     # User._address must not be serialized; omit from dict
-    return dict(cpu_usage=monitor.cpu_usage,
+    return dict(timestamp=time(),
+                cpu_usage=monitor.cpu_usage,
                 cpu_temperature=monitor.cpu_temperature,
                 ram_usage=monitor.ram_usage,
                 ram_usage_gb=monitor.ram_usage)
@@ -83,6 +85,10 @@ def main(args):
       "description": "A Real Time Raspberry Monitoring",
       "type": "object",
       "properties": {
+        "timestamp": {
+          "description": "Timestamp",
+          "type": "number"
+        },
         "cpu_usage": {
           "description": "CPU Usage in percentage",
           "type": "number"
@@ -100,13 +106,12 @@ def main(args):
           "type": "number"
         }
       },
-      "required": [ "cpu_usage", "cpu_temperature", "ram_usage", "ram_usage_gb" ]
+      "required": [ "timestamp", "cpu_usage", "cpu_temperature", "ram_usage", "ram_usage_gb" ]
     }
     """
     schema_registry_conf = {'url': args.schema_server}
     schema_registry_client = SchemaRegistryClient(schema_registry_conf)
 
-    string_serializer = StringSerializer('utf_8')
     json_serializer = JSONSerializer(schema_str, schema_registry_client, monitor_to_dict)
 
     while(True):
@@ -116,8 +121,8 @@ def main(args):
         print("Publishing: " + str(monitor))
 
         producer.produce(topic=topic,
-                        key=string_serializer(str(uuid4())),
-                        value=json_serializer(monitor, SerializationContext(topic, MessageField.VALUE)),
+                        key=str(uuid4()),
+                        value=json.dumps(monitor_to_dict(monitor)),
                         on_delivery=delivery_callback)
 
         # Block until the messages are sent.
