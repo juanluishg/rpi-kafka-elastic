@@ -23,14 +23,14 @@ class Monitor(object):
 
         ram_usage (double): RAM usage in percentage
 
-        ram_usage_gb(double): RAM usage in GB
+        ram_usage_mb(double): RAM usage in MB
     """
 
-    def __init__(self, cpu_usage, cpu_temperature, ram_usage, ram_usage_gb):
+    def __init__(self, cpu_usage, cpu_temperature, ram_usage, ram_usage_mb):
         self.cpu_usage = cpu_usage
         self.cpu_temperature = cpu_temperature
         self.ram_usage = ram_usage
-        self.ram_usage_gb = ram_usage_gb
+        self.ram_usage_mb = ram_usage_mb
 
 def monitor_to_dict(monitor):
     """
@@ -51,7 +51,7 @@ def monitor_to_dict(monitor):
                 cpu_usage=monitor.cpu_usage,
                 cpu_temperature=monitor.cpu_temperature,
                 ram_usage=monitor.ram_usage,
-                ram_usage_gb=monitor.ram_usage)
+                ram_usage_mb=monitor.ram_usage)
 
 def main(args):
     # Parse the configuration.
@@ -101,12 +101,12 @@ def main(args):
           "description": "RAM usage in percentage",
           "type": "number"
         },
-        "ram_usage_gb": {
-          "description": "RAM usage in GB",
+        "ram_usage_mb": {
+          "description": "RAM usage in MB",
           "type": "number"
         }
       },
-      "required": [ "timestamp", "cpu_usage", "cpu_temperature", "ram_usage", "ram_usage_gb" ]
+      "required": [ "timestamp", "cpu_usage", "cpu_temperature", "ram_usage", "ram_usage_mb" ]
     }
     """
     schema_registry_conf = {'url': args.schema_server}
