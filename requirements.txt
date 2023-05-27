@@ -1,3 +1,5 @@
 confluent-kafka
 psutil
 gpiozero
+requests
+jsonschema

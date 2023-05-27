@@ -11,6 +11,7 @@ curl -X POST http://192.168.178.100:8083/connectors -H 'Content-Type: applicatio
     "type.name": "_doc",
     "name": "elasticsearch-sink",
     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-    "value.converter.schemas.enable": "false"
+    "value.converter.schemas.enable": "false",
+    "topic.schema.ignore": "true"
   }
 }'

@@ -10,6 +10,7 @@ from confluent_kafka.serialization import StringSerializer, SerializationContext
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.json_schema import JSONSerializer
 from time import sleep, time
+from datetime import datetime
 import json
 
 class Monitor(object):
@@ -26,68 +27,27 @@ class Monitor(object):
         ram_usage_mb(double): RAM usage in MB
     """
 
-    def __init__(self, cpu_usage, cpu_temperature, ram_usage, ram_usage_mb):
+    def __init__(self, uuid, cpu_usage, cpu_temperature, ram_usage, ram_usage_mb):
+        self.uuid = uuid
         self.cpu_usage = cpu_usage
         self.cpu_temperature = cpu_temperature
         self.ram_usage = ram_usage
         self.ram_usage_mb = ram_usage_mb
 
-def monitor_to_dict(monitor):
-    """
-    Returns a dict representation of a monitor instance for serialization.
-
-    Args:
-        monitor (Monitor): Monitor instance.
-
-        ctx (SerializationContext): Metadata pertaining to the serialization
-            operation.
-
-    Returns:
-        dict: Dict populated with monitor attributes to be serialized.
-    """
-
-    # User._address must not be serialized; omit from dict
-    return dict(timestamp=time(),
-                cpu_usage=monitor.cpu_usage,
-                cpu_temperature=monitor.cpu_temperature,
-                ram_usage=monitor.ram_usage,
-                ram_usage_mb=monitor.ram_usage)
-
-def main(args):
-    # Parse the configuration.
-    # See https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
-    config_parser = ConfigParser()
-    config_parser.read_file(args.config_file)
-    config = dict(config_parser['default'])
-
-    print("Going to connect to: " + config_parser['default']['bootstrap.servers'])
-
-    # Create Producer instance
-    producer = Producer(config)
-
-    # Optional per-message delivery callback (triggered by poll() or flush())
-    # when a message has been successfully delivered or permanently
-    # failed delivery (after retries).
-    def delivery_callback(err, msg):
-        if err:
-            print('ERROR: Message failed delivery: {}'.format(err))
-        else:
-            print("Produced event to topic {topic}: key = {key:12} value = {value:12}".format(
-                topic=msg.topic(), key=msg.key().decode('utf-8'), value=msg.value().decode('utf-8')))
-
-    # Produce data by selecting random values from these lists.
-    topic = "internal-monitoring"
-
-    schema_str = """
+schema_str = """
     {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "InternalMonitoring",
       "description": "A Real Time Raspberry Monitoring",
       "type": "object",
       "properties": {
-        "timestamp": {
-          "description": "Timestamp",
-          "type": "number"
+        "uuid": {
+          "description": "UUID",
+          "type": "string"
+        },
+        "datetime": {
+          "description": "Date and Time",
+          "type": "string"
         },
         "cpu_usage": {
           "description": "CPU Usage in percentage",
@@ -109,6 +69,56 @@ def main(args):
       "required": [ "timestamp", "cpu_usage", "cpu_temperature", "ram_usage", "ram_usage_mb" ]
     }
     """
+
+def monitor_to_dict(monitor, ctx):
+    """
+    Returns a dict representation of a monitor instance for serialization.
+
+    Args:
+        monitor (Monitor): Monitor instance.
+
+        ctx (SerializationContext): Metadata pertaining to the serialization
+            operation.
+
+    Returns:
+        dict: Dict populated with monitor attributes to be serialized.
+    """
+
+    # User._address must not be serialized; omit from dict
+    return {"uuid":monitor.uuid, 
+            "timestamp":str(datetime.now()),
+            "cpu_usage":monitor.cpu_usage,
+            "cpu_temperature":monitor.cpu_temperature,
+            "ram_usage":monitor.ram_usage,
+            "ram_usage_mb":monitor.ram_usage}
+
+# Optional per-message delivery callback (triggered by poll() or flush())
+# when a message has been successfully delivered or permanently
+# failed delivery (after retries).
+def delivery_callback(err, msg):
+  if err:
+      print('ERROR: Message failed delivery: {}'.format(err))
+  else:
+      print("Produced event to topic {topic}: key = {key:12} value = {value:12}".format(
+          topic=msg.topic(), key=msg.key().decode('utf-8'), value=msg.value().decode('utf-8')))
+
+
+def main(args):
+    # Parse the configuration.
+    # See https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
+    config_parser = ConfigParser()
+    config_parser.read_file(args.config_file)
+    config = dict(config_parser['default'])
+
+    print("Going to connect to: " + config_parser['default']['bootstrap.servers'])
+
+    # Create Producer instance
+    producer = Producer(config)
+
+    
+    # Produce data by selecting random values from these lists.
+    topic = args.topic
+   
     schema_registry_conf = {'url': args.schema_server}
     schema_registry_client = SchemaRegistryClient(schema_registry_conf)
 
@@ -116,13 +126,13 @@ def main(args):
 
     while(True):
         cpu = CPUTemperature()
-        monitor = Monitor(psutil.cpu_percent(4), cpu.temperature, psutil.virtual_memory()[2], psutil.virtual_memory()[3]/1000000000 )
+        monitor = Monitor(uuid4().hex, psutil.cpu_percent(4), cpu.temperature, psutil.virtual_memory()[2], psutil.virtual_memory()[3]/1000000000 )
 
         print("Publishing: " + str(monitor))
 
         producer.produce(topic=topic,
-                        key=str(uuid4()),
-                        value=json.dumps(monitor_to_dict(monitor)),
+                        key=str(monitor.uuid),
+                        value=json_serializer(monitor, SerializationContext(topic, MessageField.VALUE)),
                         on_delivery=delivery_callback)
 
         # Block until the messages are sent.
@@ -135,7 +145,8 @@ def main(args):
 if __name__ == '__main__':
     # Parse the command line.
     parser = ArgumentParser()
-    parser.add_argument('-c', dest='config_file', type=FileType('r'))
-    parser.add_argument('-s', dest='schema_server', type=str)
+    parser.add_argument('-c', dest='config_file', type=FileType('r'), required=True)
+    parser.add_argument('-s', dest='schema_server', type=str, default="http://192.168.178.100:8081", required=False)
+    parser.add_argument('-t', dest='topic', type=str, default="internal-monitoring", required=False)
     args = parser.parse_args()
     main(args)
